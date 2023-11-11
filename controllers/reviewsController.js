@@ -1,7 +1,9 @@
 // Dependencies
 const express = require("express");
+// CHILD MODEL gets mergeParams
+const reviews = express.Router({ mergeParams: true });
 
-const reviews = express.Router();
+const { getBookmark } = require('../queries/bookmarks')
 
 // Queries
 const {
@@ -16,9 +18,10 @@ const {
 reviews.get("/", async (req, res) => {
   const { bookmark_id } = req.params;
   const allReviews = await getAllReviews(bookmark_id);
+  const bookmark = await getBookmark(bookmark_id)
 
-  if (allReviews[0]) {
-    res.status(200).json(allReviews);
+  if (bookmark.id) {
+    res.status(200).json({ ...bookmark, allReviews});
   } else {
     res.status(500).json({ error: "server error" });
   }
@@ -26,11 +29,12 @@ reviews.get("/", async (req, res) => {
 
 // SHOW
 reviews.get("/:id", async (req, res) => {
-  const { id } = req.params;
+  const { bookmark_id, id } = req.params;
   const review = await getReview(id);
+  const bookmark = await getBookmark(bookmark_id)
 
   if (review) {
-    res.json(review);
+    res.json({ ...bookmark, review });
   } else {
     res.status(404).json({ error: "not found" });
   }
@@ -38,8 +42,8 @@ reviews.get("/:id", async (req, res) => {
 
 // UPDATE
 reviews.put("/:id", async (req, res) => {
-  const { id } = req.params;
-  const updatedReview = await updateReview(id, req.body);
+  const { id, bookmark_id } = req.params;
+  const updatedReview = await updateReview({ bookmark_id, id, ...req.body });
   if (updatedReview.id) {
     res.status(200).json(updatedReview);
   } else {
@@ -48,7 +52,8 @@ reviews.put("/:id", async (req, res) => {
 });
 
 reviews.post("/", async (req, res) => {
-  const review = await newReview(req.body);
+  const { bookmark_id } = req.params
+  const review = await newReview({ bookmark_id, ...req.body });
   res.status(200).json(review);
 });
 
